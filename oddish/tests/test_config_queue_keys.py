@@ -8,6 +8,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from oddish.config import (
+    GEOMETRIC_DEFAULT_BASE_URL,
     NOP_ORACLE_QUEUE_KEY,
     Settings,
     normalize_model_id,
@@ -446,6 +447,24 @@ def test_geometric_allowlist_leaves_other_providers_open(monkeypatch):
         == "meta/anything-at-all"
     )
     assert settings.normalize_trial_model("claude-code", "zai/glm-5.4") == "zai/glm-5.4"
+
+
+def test_blank_geometric_base_urls_normalize_to_unset(monkeypatch):
+    # A key present-and-empty in a Modal secret passes str validation as "",
+    # which would otherwise resolve to no egress host and an empty endpoint.
+    # Blank means unset, so both routes stay on the default.
+    monkeypatch.setenv("GEOMETRIC_BASE_URL", "  ")
+    monkeypatch.setenv("GEOMETRIC_ANTHROPIC_BASE_URL", "")
+    settings = _settings(monkeypatch, clear_openai_env=False)
+
+    assert settings.geometric_base_url == GEOMETRIC_DEFAULT_BASE_URL
+    assert settings.geometric_anthropic_base_url is None
+    assert settings.get_geometric_agent_env()["OPENAI_BASE_URL"] == (
+        GEOMETRIC_DEFAULT_BASE_URL
+    )
+    assert settings.get_geometric_anthropic_base_url() == (
+        GEOMETRIC_DEFAULT_BASE_URL.removesuffix("/v1")
+    )
 
 
 def test_geometric_agent_env_points_mini_swe_at_geometric(monkeypatch):

@@ -9,7 +9,6 @@ from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from oddish.config import (
-    GEOMETRIC_DEFAULT_BASE_URL,
     OPENAI_PROVIDER_AZURE,
     anthropic_hdo_bare_model_id,
     geometric_bare_model_id,
@@ -132,9 +131,7 @@ async def check_model_endpoint(
             kwargs.update(
                 {
                     "api_key": geometric_api_key,
-                    "api_base": (
-                        settings.geometric_base_url or GEOMETRIC_DEFAULT_BASE_URL
-                    ).rstrip("/"),
+                    "api_base": settings.geometric_base_url.rstrip("/"),
                 }
             )
         elif provider == "gemini" and model.startswith("google/"):

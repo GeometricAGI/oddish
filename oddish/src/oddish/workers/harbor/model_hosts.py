@@ -17,7 +17,6 @@ from typing import Any
 from oddish.config import (
     DEEPSEEK_DEFAULT_BASE_URL,
     FIREWORKS_DEFAULT_BASE_URL,
-    GEOMETRIC_DEFAULT_BASE_URL,
     META_DEFAULT_BASE_URL,
     MINIMAX_DEFAULT_BASE_URL,
     MOONSHOT_DEFAULT_BASE_URL,
@@ -425,7 +424,7 @@ def outbound_hosts_for_model(
         if host:
             hosts.append(host)
     elif is_geometric_model(model_name):
-        host = _default_host(settings.geometric_base_url or GEOMETRIC_DEFAULT_BASE_URL)
+        host = _default_host(settings.geometric_base_url)
         if host:
             hosts.append(host)
     elif is_anthropic_hdo_model(model_name):

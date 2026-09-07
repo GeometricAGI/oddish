@@ -1758,6 +1758,23 @@ class Settings(BaseSettings):
     # ==========================================================================
 
     @model_validator(mode="after")
+    def _normalize_geometric_base_urls(self) -> "Settings":
+        """Treat a blank base URL as unset, so callers can trust the field.
+
+        Both fields default to a usable value when their env var is ABSENT,
+        but a key present-and-empty (a blank entry in a Modal secret) passes
+        validation as ``""`` -- which every reader then has to guard against
+        or silently resolve to no host / an empty endpoint. Normalizing here
+        makes "blank means unset" a settings-level invariant and keeps the
+        four call sites free of their own ``or DEFAULT`` fallbacks.
+        """
+        if not (self.geometric_base_url or "").strip():
+            self.geometric_base_url = GEOMETRIC_DEFAULT_BASE_URL
+        if not (self.geometric_anthropic_base_url or "").strip():
+            self.geometric_anthropic_base_url = None
+        return self
+
+    @model_validator(mode="after")
     def _derive_gke_cluster_name(self) -> "Settings":
         # Deploys that resolve an identity bake it into the coordinate
         # snapshot, so this derivation normally never runs in a container.
@@ -2287,12 +2304,12 @@ class Settings(BaseSettings):
         explicit = (self.geometric_anthropic_base_url or "").strip()
         if explicit:
             return explicit.rstrip("/")
-        base = (self.geometric_base_url or GEOMETRIC_DEFAULT_BASE_URL).rstrip("/")
+        base = self.geometric_base_url.rstrip("/")
         return base.removesuffix("/v1").rstrip("/")
 
     def get_geometric_agent_env(self) -> dict[str, str]:
         """Return env vars for Geometric's OpenAI-compatible mini-swe-agent route."""
-        base_url = (self.geometric_base_url or GEOMETRIC_DEFAULT_BASE_URL).rstrip("/")
+        base_url = self.geometric_base_url.rstrip("/")
         # Same shape as the Meta route: mini-swe-agent drives the model through
         # LiteLLM's ``openai/`` provider (see
         # OddishGeometricMiniSweAgent._litellm_model_name), which authenticates
